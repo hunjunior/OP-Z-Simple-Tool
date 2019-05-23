@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>OP-Z Simple Tool</title>
+</head>
+
+<body>
+  <div class="header-column-1"><h4>OP-Z Simple Tool</h4></div>
+  <div class="header-column-2">
+    <div class="screen">
+        <p id="total-lenght" style="color:red">0 / 12 sec</p>
+    </div>
+  </div>
+  
+
+  <!-- <hr>
+  Chosen file has to be a 44.1kHz WAV audio file.
+  <br><br>
+  <input type="file" name="fileUpload" id="file-upload">
+  <br><br>
+  <p id="audio-details"></p>
+  <br><br>
+  <button id="convert-btn">Generate AIF</button>
+  <br><br>
+  <p id="success-msg"></p>
+  <p id="error-msg"></p>
+
+  <hr>
+  Chosen file has to be a 44.1kHz mono WAVE audio file.
+  <br><br>
+  <input type="file" name="aif-file" id="aif-file-input">
+  <br><br>
+  <p id="audio-details-2"></p>
+  <br><br>
+  <textarea name="aif-object" id="aif-object" cols="50" rows="10"></textarea>
+  <br><br>
+  <button id="add-object-btn" disabled>Create OP-Z sample</button> -->
+
+  <div class="wrapper">
+    <div class="column image-holder">
+    </div>
+    <div class="column">
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div>
+
+      <div class="devider"></div>
+
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div>
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div>
+
+      <div class="devider"></div>
+
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+
+      <div class="devider"></div>
+
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+      <div class="sample-holder"><div class="delete-sample"></div> <input type="file" class="samples">
+        <p class="sample-msg"></p>
+      </div> 
+    </div>
+  </div>
+
+  <button id="generate-btn" disabled>Generate OP drum sample</button>
+
+  <script>
+    // You can also require other files to run in this process
+    require('./renderer.js')
+  </script>
+</body>
+
+<style>
+  body {
+    background: #585A5E;
+    margin: 1vh 1vw;
+  }
+
+  #error-msg {
+    color: red
+  }
+
+  #success-msg {
+    color: green
+  }
+
+  .header-column-1 {
+    width: 30vw;
+    height: 15vh;
+    float: left;
+  }
+
+  .header-column-2 {
+    width: 65vw;
+    height: 15vh;
+    float: left;
+  }
+
+  .screen {
+    background: black;
+    width: 40vw;
+    height: 12vh;
+    margin: 1.5vh 12.5vw;
+    font-weight: bold;
+  }
+
+  .sample-holder {
+    display: flex;
+    height: 3.704%;
+  }
+
+  .devider {
+    display: flex;
+    height: 3.704%;
+  }
+
+  .delete-sample {
+    height: 95%;
+    width: 4vw;
+    background-image: url(./res/images/bin.png);
+    background-size: 40%;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .samples {}
+
+  .sample-msg {
+    display: inline;
+    margin: 0;
+  }
+
+  .column {
+    float: left;
+    height: 100%;
+  }
+
+  .wrapper {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .image-holder {
+    width: 11.88vh;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-image: url(./res/images/opz_keys.png);
+  }
+</style>
+
+</html>
