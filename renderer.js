@@ -5,55 +5,70 @@ const AudioContext = require('web-audio-api').AudioContext;
 const audioContext = new AudioContext;
 const fileType = require('file-type');
 const toWav = require('audiobuffer-to-wav');
-//const FileSaver = require("file-saver");
 
-let filePath = '';
+const MAX_FILE_SIZE = 20; //in MB
+
 let filePathArray = new Array(24).fill(null);
 let audioObjArray = new Array(24).fill(null);
 let totalLengthSec = 0;
 
-let aifFilePath = '';
+let errorMsg = document.querySelector('#error-msg');
+let successMsg = document.querySelector('#success-msg');
+let resultMsg = document.querySelector('#result-msg');
+let deleteBtn = document.querySelectorAll('.delete-sample');
+let detailsBtn = document.querySelectorAll('.sample-details-btn');
+let fileInputs = document.querySelectorAll('.samples');
+let uploadBtn = document.querySelectorAll('.upload-btn');
 
-//document.querySelector('#convert-btn').onclick = convertWavToAif;
+uploadBtn.forEach((btn, i) => {
+    btn.onclick = () => {
+        fileInputs[i].click();
+    }
+})
 
-document.querySelectorAll('.samples').forEach((inputElement, i) => {
+
+fileInputs.forEach((inputElement, i) => {
     let tempFilePath = "";
-    let sampleMsg = document.querySelectorAll('.sample-msg');
-
     inputElement.onchange = function () {
         if (this.files[0]) {
             tempFilePath = this.files[0].path;
-            console.log(this.files[0].path);
+            let stats = fs.statSync(tempFilePath)
+            let fileSizeInBytes = stats["size"]
+            if (fileSizeInBytes < (MAX_FILE_SIZE * 1000000)) {
+                fs.readFile(tempFilePath, (err, buf) => {
+                    if (err) {
+                        console.log(err);
+                        inputElement.value = "";
+                        alert(err);
+                    } else if (!fileType(buf) || (fileType(buf).mime != "audio/vnd.wave" && fileType(buf).mime != "audio/aiff" && fileType(buf).mime != "audio/mpeg")) {
+                        console.log(fileType(buf));
+                        inputElement.value = "";
+                        sendError("Supported file types are WAV, MP3 and AIFF.");
+                    } else {
+                        
+                        processWav(tempFilePath, fileType(buf).mime, (audioObj) => {
+                            if (audioObj.sampleRate != 44100) {
+                                inputElement.value = "";
+                                sendError("Sample rate of the WAV file must be 44.1 kHz")
+                            } else {
+                                filePathArray[i] = tempFilePath;
+                                audioObjArray[i] = audioObj;
+                                totalLengthSec = Math.ceil(getTotalLength() * 100) / 100;
+                                errorMsg.innerHTML = "";
+                                uploadBtn[i].style.display = "none";
+                                deleteBtn[i].style.display = "block";
+                                detailsBtn[i].style.display = "flex";
+                                updateScreen(audioObj, detailsBtn[i], detailsBtn);
+                                updateTotalLength();
+                            }
+                        })
+                    }
+                })
+            } else {
+                inputElement.value = "";
+                sendError("Max supported file size is " + MAX_FILE_SIZE + " MB.")
+            }
 
-            fs.readFile(tempFilePath, (err, buf) => {
-                if (err) {
-                    console.log(err);
-                    //sendError(err);
-                    //document.querySelector('#add-object-btn').disabled = true;
-                    alert(err);
-                } else if (!fileType(buf) || (fileType(buf).mime != "audio/vnd.wave" && fileType(buf).mime != "audio/aiff" && fileType(buf).mime != "audio/mpeg")) {
-                    console.log(fileType(buf));
-                    console.log("Supported file types are WAV, MP3 and AIFF.");
-                    sampleMsg[i].innerHTML = "Supported file types are WAV, MP3 and AIFF.";
-                } else {
-                    //sendError("");
-                    processWav(tempFilePath, (audioObj) => {
-                        //updateDetails(audioObj, '#audio-details-2');
-                        if (audioObj.sampleRate != 44100) {
-                            console.log("Sample rate of the WAV file must be 44.1 kHz")
-                            sampleMsg[i].innerHTML = "Sample rate of the WAV file must be 44.1 kHz";
-                        } else {
-                            filePathArray[i] = tempFilePath;
-                            audioObjArray[i] = audioObj;
-                            totalLengthSec = Math.ceil(getTotalLength() * 100) / 100;
-                            let currentLenghtRounded = Math.round(audioObj.timeLength * 100) / 100;
-                            console.log(totalLengthSec + " sec");
-                            sampleMsg[i].innerHTML = currentLenghtRounded + " sec";
-                            updateTotalLength();
-                        }
-                    })
-                }
-            })
         }
     }
 });
@@ -61,7 +76,13 @@ document.querySelectorAll('.samples').forEach((inputElement, i) => {
 document.querySelectorAll('.delete-sample').forEach((deleteBtn, i) => {
     deleteBtn.onclick = function () {
         document.querySelectorAll('.samples')[i].value = "";
-        document.querySelectorAll('.sample-msg')[i].innerHTML = "";
+        deleteBtn.style.display = "none";
+        detailsBtn[i].style.display = "none";
+        uploadBtn[i].style.display = "flex";
+
+        if (detailsBtn[i].getAttribute("selected") == "true") {
+            document.querySelector('#success-msg').innerHTML = "";
+        }
         filePathArray[i] = null;
         audioObjArray[i] = null;
         totalLengthSec = Math.ceil(getTotalLength() * 100) / 100;
@@ -69,13 +90,15 @@ document.querySelectorAll('.delete-sample').forEach((deleteBtn, i) => {
     }
 });
 
+detailsBtn.forEach((btn, i) => {
+    btn.onclick = function () {
+        updateScreen(audioObjArray[i], btn, detailsBtn);
+    }
+})
 
 document.querySelector('#generate-btn').onclick = () => {
-    console.log(filePathArray);
-    console.log(getTotalLength());
 
     getOpzObject((obj) => {
-        console.log(obj);
         joinMultipleAudio(filePathArray, (inputDir, err) => {
             if (err) {
                 console.log(err);
@@ -87,98 +110,16 @@ document.querySelector('#generate-btn').onclick = () => {
                     if (error) {
                         alert(error);
                     } else {
-                        //sendSuccess(success);
-                        joinJSONtoAIFF(outputDir, obj, emptyTempDir)
+                        joinJSONtoAIFF(outputDir, obj, (resultDir) => {
+                            emptyTempDir();
+                            updateResult(resultDir);
+                        })
                     }
                 })
             }
         });
     });
 }
-
-
-
-/* document.querySelector('#aif-file-input').onchange = async function () {
-    if (this.files[0]) {
-        aifFilePath = this.files[0].path;
-        console.log(this.files[0].path);
-
-        fs.readFile(aifFilePath, (err, buf) => {
-            if (err) {
-                console.log(err);
-                sendError(err);
-                document.querySelector('#add-object-btn').disabled = true;
-
-            } else if (fileType(buf).mime != "audio/vnd.wave") {
-                console.log(fileType(buf));
-                console.log("File type must be WAV / 44.1 kHz");
-                sendError("File type must be WAV / 44.1 kHz");
-                document.querySelector('#add-object-btn').disabled = true;
-            } else {
-                console.log(fileType(buf));
-                sendError("");
-                processWav(aifFilePath, (audioObj) => {
-                    updateDetails(audioObj, '#audio-details-2');
-                    if (audioObj.sampleRate != 44100) {
-                        sendError("Sample rate of the WAV file must be 44.1 kHz")
-                        document.querySelector('#add-object-btn').disabled = true;
-                    } else if (audioObj.channelNumber > 1) {
-                        sendError("Audio file must be mono.")
-                        document.querySelector('#add-object-btn').disabled = true;
-                    } else {
-                        document.querySelector('#add-object-btn').disabled = false;
-                    }
-                })
-            }
-        })
-    }
-} */
-
-/* document.querySelector('#add-object-btn').onclick = () => {
-    let jsonString = document.querySelector('#aif-object').value;
-    let aifObj = null;
-
-    if (jsonString) {
-        try {
-            aifObj = JSON.parse(jsonString);
-        } catch (e) {
-            sendError("Invalid JSON.");
-        }
-
-        console.log(aifObj);
-
-        if (aifObj) {
-            let date = new Date();
-            let isoDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString();
-            let outputDir = "./outputs/OP-Z_" + isoDate + ".aiff";
-            convertFile(aifFilePath, outputDir, (success, error) => {
-                if (error) {
-                    sendError(error);
-                } else {
-                    sendSuccess(success);
-                    joinJSONtoAIFF(outputDir, aifObj)
-                }
-            })
-        } else {
-            sendError("Invalid JSON.")
-        }
-    } else {
-        sendError("Invalid JSON.")
-    }
-
-
-}; */
-
-
-/* document.querySelector('#file-upload').onchange = async function () {
-    if (this.files[0]) {
-        filePath = this.files[0].path;
-        console.log(this.files[0].path);
-
-        let audioObj = await processWavSync(filePath)
-        updateDetails(audioObj, '#audio-details');
-    }
-} */
 
 function emptyTempDir() {
     let tempDirectory = './temp';
@@ -208,6 +149,8 @@ function getOpzObject(callback) {
         }
     })
 
+    //in the OP json's PITCH field, the -6000 value tunes the sample ONE OCTAVE DOWN (Pitch down TODO)
+
     fs.readFile('./JSON/drum_JSON_template.json', (err, data) => {
         if (err) throw err;
         OpzObject = JSON.parse(data);
@@ -222,15 +165,15 @@ function toOPTime(seconds) {
 }
 
 function updateTotalLength() {
-    let lenghtElement = document.querySelector('#total-lenght');
+    let lengthElement = document.querySelector('#total-length');
     if (totalLengthSec > 0 && totalLengthSec <= 12) {
-        lenghtElement.style.color = "green";
+        lengthElement.style.color = "green";
         document.querySelector('#generate-btn').disabled = false;
     } else {
-        lenghtElement.style.color = "red";
+        lengthElement.style.color = "red";
         document.querySelector('#generate-btn').disabled = true;
     }
-    lenghtElement.innerHTML = totalLengthSec + " / 12 sec";
+    lengthElement.innerHTML = totalLengthSec + " / 12 sec";
 }
 
 function appendBuffers(buffers) {
@@ -263,8 +206,6 @@ async function joinMultipleAudio(paths, callback) {
     }
 
     resultBuffer = appendBuffers(buffers);
-    //console.log(resultBuffer);
-
     let wav = toWav(resultBuffer);
     let chunk = new Uint8Array(wav);
     let isoDateString = new Date().toISOString();
@@ -284,22 +225,43 @@ function getTotalLength() {
 }
 
 function sendError(msg) {
-    document.querySelector('#error-msg').innerHTML = msg;
-    document.querySelector('#success-msg').innerHTML = "";
-}
-
-function sendSuccess(msg) {
-    document.querySelector('#success-msg').innerHTML = msg;
-    document.querySelector('#error-msg').innerHTML = "";
+    console.log(msg);
+    errorMsg.innerHTML = "<br><br>" + msg;
+    successMsg.innerHTML = "";
+    resultMsg.innerHTML = "";
 }
 
 function updateDetails(audioObj, elementId) {
-    let msg = "Sample rate: " + audioObj.sampleRate + " Hz" + "<br>" +
+    let msg = "<br> MIME type: " + audioObj.mime + "<br>" +
+        "Sample rate: " + audioObj.sampleRate + " Hz" + "<br>" +
         "Time length: " + Math.round(audioObj.timeLength * 100) / 100 + " sec" + "<br>" +
-        "Sample lenght: " + audioObj.sampleLength + " samples" + "<br>" +
+        "Sample length: " + audioObj.sampleLength + " samples" + "<br>" +
         "Channels: " + audioObj.channelNumber + " channel(s)";
+    document.querySelector(elementId).innerHTML = msg;
+}
 
-    document.querySelector(elementId).innerHTML = "<b>Audio file details:</b><br>" + msg;
+function updateScreen(audioObj, button, otherButtons) {
+    otherButtons.forEach((btn) => {
+        btn.style.background = "transparent";
+        btn.setAttribute("selected", false);
+    })
+    document.querySelector('#result-msg').innerHTML = "";
+    button.setAttribute("selected", true);
+    button.style.background = "black";
+    let filename = audioObj.filename;
+    if (filename.length > 16) filename = filename.split(".")[0].slice(0, 9) + "..." + filename.split(".")[1];
+    button.innerHTML = filename + " - " + (Math.round(audioObj.timeLength * 100) / 100) + " sec"
+    updateDetails(audioObj, "#success-msg")
+}
+
+function updateResult(resultDir) {
+    document.querySelector('#success-msg').innerHTML = "";
+    document.querySelector('#error-msg').innerHTML = "";
+    detailsBtn.forEach((btn) => {
+        btn.style.background = "transparent";
+        btn.setAttribute("selected", false);
+    })
+    resultMsg.innerHTML = "<br>The OP-Z sample is ready!<br><br>File location: " + resultDir;
 }
 
 function convertFile(inputPath, outputPath, callback) {
@@ -336,28 +298,16 @@ function getAudioBuffer(filePath) {
     })
 }
 
-async function processWavSync(path) {
+async function processWav(path, mime, callback) {
     let buffer = await getAudioBuffer(path);
 
+    let filename = path.split("/").pop();
 
     let data = buffer.getChannelData(0);
-    return {
-        samples: data,
-        sampleRate: buffer.sampleRate,
-        sampleLength: data.length,
-        timeLength: data.length / buffer.sampleRate,
-        channelNumber: buffer.numberOfChannels
-    }
-}
-
-async function processWav(path, callback) {
-    let buffer = await getAudioBuffer(path);
-
-
-    let data = buffer.getChannelData(0);
-    //console.log(data);
 
     let obj = {
+        filename: filename,
+        mime: mime,
         samples: data,
         sampleRate: buffer.sampleRate,
         sampleLength: data.length,
@@ -386,7 +336,6 @@ function joinJSONtoAIFF(aiffPath, obj, callback) {
 
         let sndPos = buf.indexOf("SSND");
         let output = Buffer.alloc(buf.length + applBuf.length);
-        console.log("SSND position: " + sndPos);
 
         buf.copy(output, 0, 0, sndPos);
         applBuf.copy(output, sndPos);
@@ -397,34 +346,11 @@ function joinJSONtoAIFF(aiffPath, obj, callback) {
         let isoDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString();
         let outputDir = "./outputs/OP-Z_JSON_" + isoDate + ".aif";
 
-        //FileSaver.saveAs(blob, outputDir + fileName);
-
         var fileReader = new FileReader();
         fileReader.onload = function () {
             fs.writeFileSync(outputDir, Buffer.from(new Uint8Array(this.result)));
-            callback();
+            callback(outputDir);
         };
         fileReader.readAsArrayBuffer(blob);
     });
-}
-
-function convertWavToAif() {
-    if (filePath) {
-
-        let fileName = filePath.split("/").pop().split(".");
-        fileName.pop();
-        fileName = fileName.join(".") + "_converted.aiff";
-        let outputDir = "./outputs/";
-        let testObj = { test: 123456 };
-        convertFile(filePath, outputDir + fileName, (success, error) => {
-            if (error) {
-                sendError(error);
-            } else {
-                sendSuccess(success);
-                joinJSONtoAIFF(outputDir + fileName, testObj)
-            }
-        })
-    } else {
-        sendError("Choose a file first.")
-    }
 }
