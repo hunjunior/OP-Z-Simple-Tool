@@ -1,16 +1,17 @@
-const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
 const AudioContext = require('web-audio-api').AudioContext;
 const audioContext = new AudioContext;
 const fileType = require('file-type');
-const toWav = require('audiobuffer-to-wav');
+const toAiff = require('audiobuffer-to-aiff')
 
 const MAX_FILE_SIZE = 20; //in MB
 
 let filePathArray = new Array(24).fill(null);
 let audioObjArray = new Array(24).fill(null);
 let totalLengthSec = 0;
+let outputDir = '';
+let player = new Audio();
 
 let errorMsg = document.querySelector('#error-msg');
 let successMsg = document.querySelector('#success-msg');
@@ -19,6 +20,22 @@ let deleteBtn = document.querySelectorAll('.delete-sample');
 let detailsBtn = document.querySelectorAll('.sample-details-btn');
 let fileInputs = document.querySelectorAll('.samples');
 let uploadBtn = document.querySelectorAll('.upload-btn');
+let outputDirSelect = document.querySelector('#output-dir-select');
+let outputDirBtn = document.querySelector('#output-dir-btn');
+let outputDirText = document.querySelector('#output-dir-text');
+
+fs.readFile('./config.json', (err, data) => {
+    if (err) throw err;
+    setOutputDirectory(JSON.parse(data).outputDirectory);
+});
+
+outputDirBtn.onclick = () => outputDirSelect.click()
+
+outputDirSelect.onchange = function ()  {
+    if (this.files[0]) {
+        setOutputDirectory(this.files[0].path);
+    }
+}
 
 uploadBtn.forEach((btn, i) => {
     btn.onclick = () => {
@@ -93,32 +110,47 @@ document.querySelectorAll('.delete-sample').forEach((deleteBtn, i) => {
 detailsBtn.forEach((btn, i) => {
     btn.onclick = function () {
         updateScreen(audioObjArray[i], btn, detailsBtn);
+        if(player.paused) {
+            player.currentTime = 0;
+            player.src = filePathArray[i]
+            player.play();
+        } else {
+            player.pause();
+        }
     }
 })
 
 document.querySelector('#generate-btn').onclick = () => {
-
-    getOpzObject((obj) => {
-        joinMultipleAudio(filePathArray, (inputDir, err) => {
-            if (err) {
-                console.log(err);
-            } else {
-                let date = new Date();
-                let isoDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString();
-                let outputDir = "./temp/OP-Z_join_" + isoDate + ".aiff";
-                convertFile(inputDir, outputDir, (success, error) => {
-                    if (error) {
-                        alert(error);
-                    } else {
-                        joinJSONtoAIFF(outputDir, obj, (resultDir) => {
-                            emptyTempDir();
-                            updateResult(resultDir);
-                        })
-                    }
-                })
-            }
+    if(outputDir) {
+        getOpzObject((obj) => {
+            joinMultipleAudio(filePathArray, (inputDir, err) => {
+                if (err) {
+                    console.log(err);
+                } else {
+                    let date = new Date();
+                    let isoDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString();
+                    //let outputDir = "./temp/OP-Z_join_" + isoDate + ".aiff";
+                    joinJSONtoAIFF(inputDir, obj, (resultDir) => {
+                        emptyTempDir();
+                        updateResult(resultDir);
+                    })
+                }
+            });
         });
-    });
+    } else {
+        sendError('Select the output folder first.')
+    }
+}
+
+function setOutputDirectory(path) {
+    if (fs.existsSync(path)) {
+        outputDir = path;
+        outputDirText.innerHTML = outputDir;
+    } else {
+        outputDir = '';
+        outputDirText.innerHTML = 'Output folder not selected.';
+    } 
+    fs.writeFileSync('config.json', JSON.stringify({outputDirectory: outputDir}));
 }
 
 function emptyTempDir() {
@@ -206,8 +238,8 @@ async function joinMultipleAudio(paths, callback) {
     }
 
     resultBuffer = appendBuffers(buffers);
-    let wav = toWav(resultBuffer);
-    let chunk = new Uint8Array(wav);
+    let aif = toAiff(resultBuffer);
+    let chunk = new Uint8Array(aif);
     let isoDateString = new Date().toISOString();
     let outputDir = './temp/output-join-' + isoDateString + '.wav';
     fs.writeFile(outputDir, Buffer.from(chunk), function (err) {
@@ -262,29 +294,6 @@ function updateResult(resultDir) {
         btn.setAttribute("selected", false);
     })
     resultMsg.innerHTML = "<br>The OP-Z sample is ready!<br><br>File location: " + resultDir;
-}
-
-function convertFile(inputPath, outputPath, callback) {
-    let inMedia = path.resolve("" + inputPath + "");
-    let outMedia = path.resolve("" + outputPath + "");
-    console.log("Transcoding: " + inputPath + " > " + outputPath);
-
-    var command = ffmpeg(inMedia).addOptions([
-        '-preset veryslow'
-    ]);
-
-    command.save(outMedia).audioFilters(
-        {
-            filter: 'silencedetect',
-            options: { n: '-50dB', d: 5 }
-        }
-    )
-        .on('error', function (err) {
-            callback(null, 'Cannot process file: ' + err.message);
-        })
-        .on('end', function () {
-            callback('Processing finished successfully', null);
-        });
 }
 
 function getAudioBuffer(filePath) {
@@ -344,12 +353,12 @@ function joinJSONtoAIFF(aiffPath, obj, callback) {
 
         let date = new Date();
         let isoDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString();
-        let outputDir = "./outputs/OP-Z_JSON_" + isoDate + ".aif";
+        let outputDirTemp = outputDir + "/OP-Z_JSON_" + isoDate + ".aif";
 
         var fileReader = new FileReader();
         fileReader.onload = function () {
-            fs.writeFileSync(outputDir, Buffer.from(new Uint8Array(this.result)));
-            callback(outputDir);
+            fs.writeFileSync(outputDirTemp, Buffer.from(new Uint8Array(this.result)));
+            callback(outputDirTemp);
         };
         fileReader.readAsArrayBuffer(blob);
     });

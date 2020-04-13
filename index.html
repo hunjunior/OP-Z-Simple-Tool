@@ -9,8 +9,9 @@
 <body>
   <div class="header">
     <div class="header-column-1">
-      OP-Z Simple Tool
+      <input id="output-dir-select" type="file" webkitdirectory />
       <div class="logo-container"></div>
+      <div id="output-dir-btn">Output folder <span id="icon">&#8628;</span></div><div id="output-dir-text">/home/junior/Desktop/samples</div>
     </div>
     <div class="header-column-2">
       <div class="screen">
@@ -208,7 +209,11 @@
     position: absolute;
     right: 2vw;
     text-align: end;
-    font-size: large;
+  }
+
+  #icon {
+    font-size: x-large;
+    margin-left: 1vw;
   }
 
   .header {
@@ -218,10 +223,9 @@
 
   .logo-container {
     background-image: url(./res/images/logo.png);
-    height: 10vh;
-    width: 19.2vh;
+    height: 6vh;
     background-size: contain;
-    margin: 2vh 0 0 0;
+    background-repeat: no-repeat;
   }
 
   .header-column-1 {
@@ -231,7 +235,7 @@
     font-family: monospace;
     font-weight: bold;
     box-sizing: border-box;
-    padding: 2vh 1vw;
+    padding: 1vh 1vw;
   }
 
   .header-column-2 {
@@ -247,13 +251,13 @@
     background: black;
     width: 40vw;
     height: 17vh;
-    font-weight: bold;
     font-family: monospace;
     border-radius: 3px;
     box-sizing: border-box;
     padding: 1vh 0 0 1vw;
     font-size: smaller;
     position: relative;
+    border: grey solid 1px;
   }
 
   .sample-holder {
@@ -293,6 +297,29 @@
   .upload-btn:hover {
     background: #c7c7c7;
     color: #3c3c3c;
+  }
+
+  #output-dir-select {
+    display: none;
+  }
+
+  #output-dir-btn {
+    border: white 1px solid;
+    width: 50%;
+    height: 5vh;
+    font-weight: normal;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 1vh 0;
+    cursor: pointer;
+  }
+
+  #output-dir-text {
+    width: 100%;
+    overflow-wrap: break-word;
+    font-size: 85%;
+    font-weight: normal;
   }
 
   .sample-details-btn {
