@@ -23,6 +23,8 @@ let uploadBtn = document.querySelectorAll('.upload-btn');
 let outputDirSelect = document.querySelector('#output-dir-select');
 let outputDirBtn = document.querySelector('#output-dir-btn');
 let outputDirText = document.querySelector('#output-dir-text');
+let octaveChecks = document.querySelectorAll('.octave-check');
+
 
 fs.readFile('./config.json', (err, data) => {
     if (err) throw err;
@@ -31,7 +33,7 @@ fs.readFile('./config.json', (err, data) => {
 
 outputDirBtn.onclick = () => outputDirSelect.click()
 
-outputDirSelect.onchange = function ()  {
+outputDirSelect.onchange = function () {
     if (this.files[0]) {
         setOutputDirectory(this.files[0].path);
     }
@@ -40,6 +42,21 @@ outputDirSelect.onchange = function ()  {
 uploadBtn.forEach((btn, i) => {
     btn.onclick = () => {
         fileInputs[i].click();
+    }
+})
+
+octaveChecks.forEach((checkbox, i) => {
+    checkbox.onclick = () => {
+        let checked = checkbox.getAttribute('checked') == 'true';
+        if (checked) {
+            checkbox.style.background = 'transparent';
+            audioObjArray[i].pitchDown = false;
+        }
+        else {
+            checkbox.style.background = 'black';
+            audioObjArray[i].pitchDown = true;
+        }
+        checkbox.setAttribute('checked', !checked);
     }
 })
 
@@ -62,7 +79,7 @@ fileInputs.forEach((inputElement, i) => {
                         inputElement.value = "";
                         sendError("Supported file types are WAV, MP3 and AIFF.");
                     } else {
-                        
+
                         processWav(tempFilePath, fileType(buf).mime, (audioObj) => {
                             if (audioObj.sampleRate != 44100) {
                                 inputElement.value = "";
@@ -75,6 +92,7 @@ fileInputs.forEach((inputElement, i) => {
                                 uploadBtn[i].style.display = "none";
                                 deleteBtn[i].style.display = "block";
                                 detailsBtn[i].style.display = "flex";
+                                octaveChecks[i].style.display = "flex";
                                 updateScreen(audioObj, detailsBtn[i], detailsBtn);
                                 updateTotalLength();
                             }
@@ -96,6 +114,7 @@ document.querySelectorAll('.delete-sample').forEach((deleteBtn, i) => {
         deleteBtn.style.display = "none";
         detailsBtn[i].style.display = "none";
         uploadBtn[i].style.display = "flex";
+        octaveChecks[i].style.display = "none"
 
         if (detailsBtn[i].getAttribute("selected") == "true") {
             document.querySelector('#success-msg').innerHTML = "";
@@ -110,7 +129,7 @@ document.querySelectorAll('.delete-sample').forEach((deleteBtn, i) => {
 detailsBtn.forEach((btn, i) => {
     btn.onclick = function () {
         updateScreen(audioObjArray[i], btn, detailsBtn);
-        if(player.paused) {
+        if (player.paused) {
             player.currentTime = 0;
             player.src = filePathArray[i]
             player.play();
@@ -121,7 +140,7 @@ detailsBtn.forEach((btn, i) => {
 })
 
 document.querySelector('#generate-btn').onclick = () => {
-    if(outputDir) {
+    if (outputDir) {
         getOpzObject((obj) => {
             joinMultipleAudio(filePathArray, (inputDir, err) => {
                 if (err) {
@@ -149,8 +168,8 @@ function setOutputDirectory(path) {
     } else {
         outputDir = '';
         outputDirText.innerHTML = 'Output folder not selected.';
-    } 
-    fs.writeFileSync('config.json', JSON.stringify({outputDirectory: outputDir}));
+    }
+    fs.writeFileSync('config.json', JSON.stringify({ outputDirectory: outputDir }));
 }
 
 function emptyTempDir() {
@@ -171,6 +190,7 @@ function getOpzObject(callback) {
     let actStart = 0;
     let starts = new Array(24).fill(0);
     let ends = new Array(24).fill(0);
+    let pitches = new Array(24).fill(0);
     let OpzObject = {};
 
     audioObjArray.forEach((obj, i) => {
@@ -178,6 +198,7 @@ function getOpzObject(callback) {
             starts[i] = actStart;
             ends[i] = starts[i] + toOPTime(obj.timeLength);
             actStart = (ends[i] + 1);
+            if(obj.pitchDown) pitches[i] = -6000;
         }
     })
 
@@ -188,6 +209,7 @@ function getOpzObject(callback) {
         OpzObject = JSON.parse(data);
         OpzObject.start = starts;
         OpzObject.end = ends;
+        OpzObject.pitch = pitches;
         callback(OpzObject)
     });
 }
@@ -280,8 +302,8 @@ function updateScreen(audioObj, button, otherButtons) {
     document.querySelector('#result-msg').innerHTML = "";
     button.setAttribute("selected", true);
     button.style.background = "black";
-    let filename = audioObj.filename;
-    if (filename.length > 16) filename = filename.split(".")[0].slice(0, 9) + "..." + filename.split(".")[1];
+    let filename = audioObj.filename.split(".")[0];
+    if (filename.length > 13) filename = "..." + filename.slice(filename.length - 9, filename.length);
     button.innerHTML = filename + " - " + (Math.round(audioObj.timeLength * 100) / 100) + " sec"
     updateDetails(audioObj, "#success-msg")
 }
@@ -321,7 +343,8 @@ async function processWav(path, mime, callback) {
         sampleRate: buffer.sampleRate,
         sampleLength: data.length,
         timeLength: data.length / buffer.sampleRate,
-        channelNumber: buffer.numberOfChannels
+        channelNumber: buffer.numberOfChannels,
+        pitchDown: false
     };
     return callback(obj);
 }
