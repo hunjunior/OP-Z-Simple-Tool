@@ -9,13 +9,13 @@
   "repository": "https://github.com/hunjunior/OP-Z-Simple-Tool",
   "keywords": [
     "Electron",
-    "quick",
-    "start",
-    "tutorial",
-    "demo"
+    "OP-Z",
+    "OP-1",
+    "audio",
+    "teenage engineering"
   ],
   "author": "David Pituk",
-  "license": "CC0-1.0",
+  "license": "MIT",
   "devDependencies": {
     "electron": "^5.0.0"
   },

@@ -231,10 +231,7 @@ function updateTotalLength() {
 }
 
 function appendBuffers(buffers) {
-    let totalLength = 0;
-    buffers.forEach(buffer => {
-        totalLength += buffer.length;
-    });
+    let totalLength = 12 * buffers[0].sampleRate;
     let tmp = audioContext.createBuffer(1, totalLength, buffers[0].sampleRate);
     let currentLength = 0;
     let channel = tmp.getChannelData(0);
@@ -263,7 +260,8 @@ async function joinMultipleAudio(paths, callback) {
     let aif = toAiff(resultBuffer);
     let chunk = new Uint8Array(aif);
     let isoDateString = new Date().toISOString();
-    let outputDir = './temp/output-join-' + isoDateString + '.wav';
+    let outputDir = './temp/output-join-' + isoDateString + '.aiff';
+    outputDir = outputDir.split(':').join('_');
     fs.writeFile(outputDir, Buffer.from(chunk), function (err) {
         if (err) callback(null, err);
         else callback(outputDir, null);
@@ -286,12 +284,16 @@ function sendError(msg) {
 }
 
 function updateDetails(audioObj, elementId) {
+    errorMsg.innerHTML = "";
+    successMsg.innerHTML = "";
+    resultMsg.innerHTML = "";
+    let screen = document.querySelector(elementId);
     let msg = "<br> MIME type: " + audioObj.mime + "<br>" +
         "Sample rate: " + audioObj.sampleRate + " Hz" + "<br>" +
         "Time length: " + Math.round(audioObj.timeLength * 100) / 100 + " sec" + "<br>" +
         "Sample length: " + audioObj.sampleLength + " samples" + "<br>" +
         "Channels: " + audioObj.channelNumber + " channel(s)";
-    document.querySelector(elementId).innerHTML = msg;
+    screen.innerHTML = msg;
 }
 
 function updateScreen(audioObj, button, otherButtons) {
@@ -375,8 +377,8 @@ function joinJSONtoAIFF(aiffPath, obj, callback) {
         let blob = new Blob([output], { type: "audio/x-aiff; charset=binary" });
 
         let date = new Date();
-        let isoDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString();
-        let outputDirTemp = outputDir + "/OP-Z_JSON_" + isoDate + ".aif";
+        let isoDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('.')[0].split(':').join('_');
+        let outputDirTemp = outputDir + "/OP-Z_PACK_" + isoDate + '.aif';
 
         var fileReader = new FileReader();
         fileReader.onload = function () {
