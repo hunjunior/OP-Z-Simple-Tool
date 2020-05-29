@@ -2,6 +2,8 @@
 
 This is a minimal OP-Z  Electron app to generate OP-Z compatible AIF drum kit files from short audio samples.
 
+<p align="center">  <img width="500" src="https://i.imgur.com/A5jzvdF.png](https://i.imgur.com/HkpXb2E.png">  </p>
+
 The main important files of the project:
 
 - `package.json` - Points to the app's main file and lists its details and dependencies.
@@ -12,7 +14,7 @@ The main important files of the project:
 
 ## To Use
 
-To clone and run this repository you'll need [Git](https://git-scm.com) and [Node.js](https://nodejs.org/en/download/) (which comes with [npm](http://npmjs.com)) installed on your computer. Furthermore, make sure you have [ffmpeg](http://www.ffmpeg.org/) installed on your system (including all necessary encoding libraries like libmp3lame or libx264) 
+To clone and run this repository you'll need [Git](https://git-scm.com) and [Node.js](https://nodejs.org/en/download/) (which comes with [npm](http://npmjs.com)) installed on your computer. 
 
 From your command line:
 
@@ -26,5 +28,3 @@ npm install
 # Run the app
 npm start
 ```
-
-Note: If you're using Linux Bash for Windows, [see this guide](https://www.howtogeek.com/261575/how-to-run-graphical-linux-desktop-applications-from-windows-10s-bash-shell/) or use `node` from the command prompt.
